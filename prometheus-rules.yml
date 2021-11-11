@@ -1,0 +1,46 @@
+# Prometheus rules file
+
+groups:
+  # Recurrent queries
+  - name: recording_rules
+    interval: 5s
+    rules:
+      # Query to know the used memory
+      - record: node_exporter:node_memory_free:memory_used_percents
+        expr: 100 - 100 * (node_memory_MemFree_bytes / node_memory_MemTotal_bytes)
+
+  # Alerting
+  - name: alerting_rules
+    rules:
+      # Check if the load average in the last 15m is superior to 75%
+      # (load average being the average number of processes being executed or waiting to be executed)
+      - alert: LoadAverage15m75
+        expr: node_load15 >= 0.75
+        labels:
+          severity: major
+        annotations:
+          summary: "Instance {{ $labels.instance }} - high load average"
+          description: "{{ $labels.instance  }} (measured by {{ $labels.job }}) has high load average ({{ $value }}) over 15 minutes."
+
+      # Check if the load average in the last 15m is superior to 95%
+      - alert: LoadAverage15m95
+        expr: node_load15 >= 0.95
+        # Check if the alert continues to be active before firing the alert
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Instance {{ $labels.instance }} - high load average"
+          description: "{{ $labels.instance  }} (measured by {{ $labels.job }}) has high load average ({{ $value }}) over 15 minutes."
+
+      # Check if the available memory is inferior to 10%
+      - alert: MemoryFree10%
+        expr: node_exporter:node_memory_free:memory_used_percents >= 90
+        labels:
+          severity: critical
+        annotations:
+          summary: "Instance {{ $labels.instance }} hight memory usage"
+          description: "{{ $labels.instance }} has more than 90% of its memory used."
+
+      # usefull command
+      # promtool check rules prometheus-rules.yml

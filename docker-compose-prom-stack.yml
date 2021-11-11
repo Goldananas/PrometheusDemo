@@ -1,0 +1,99 @@
+version: '3'
+
+volumes:
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+services:
+  # Monitoring tool
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - /etc/prometheus:/etc/prometheus
+      - prometheus-data:/prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+  
+  # Alerting tool
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    ports:
+      - 9093:9093
+    volumes:
+      - /etc/alertmanager:/etc/alertmanager
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+
+  # Visualization tool
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    restart: unless-stopped
+  
+
+  # Hardware metrics exporter
+  node-exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node-exporter
+    command:
+      - '--path.rootfs=/host'
+    pid: host
+    restart: unless-stopped
+    volumes:
+      - '/:/host:ro,rslave'
+
+  # Container metrics exporter 
+  cadvisor:
+    image: google/cadvisor:latest
+    container_name: cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+
+  # Nginx server metrics exporter
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:latest
+    container_name: nginx-exporter
+    ports:
+      - "9113:9113"
+    environment:
+      - SCRAPE_URI=http://spoon-frontend:8080/metrics
+      - TELEMETRY_PATH=/prometheus
+      - NGINX_RETRIES=10
+
+
+########################################
+
+  spoon-frontend:
+    image: gitlab.insa-rennes.fr:5050/corentin.berthelot/spoondevops/frontend:latest
+    container_name: spoon-frontend
+    depends_on:
+      - spoon-backend
+    ports:
+      - "8080:8080"
+
+  spoon-backend:
+    image: gitlab.insa-rennes.fr:5050/corentin.berthelot/spoondevops/backend:latest
+    container_name: spoon-backtend
+    ports:
+      - "4444:4444"
+
+  

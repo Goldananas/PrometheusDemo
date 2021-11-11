@@ -1,0 +1,43 @@
+# Prometheus config file
+
+global:
+  # How frequently to scrape targets by default.
+  scrape_interval: 15s
+
+  # How frequently to evaluate rule (default 1m)
+  evaluation_interval: 15s
+
+# List of targets
+scrape_configs:
+
+  # Scraping itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Example job for node-exporter
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # Example job for cadvisor
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+  # Example job for nginx-exporter
+  - job_name: 'nginx-exporter'
+    metrics_path: '/prometheus'
+    static_configs:
+      - targets: ['nginx-exporter:9113']
+
+# Rules
+rule_files:
+  - 'prometheus-rules.yml'
+
+# AlertManager
+alerting:
+  alertmanagers:
+  - scheme: http
+    static_configs:
+    - targets: ['alertmanager:9093']
