@@ -19,7 +19,7 @@ route:
 receivers:
   - name: "slack-receiver"
     slack_configs:
-      - api_url: https://hooks.slack.com/services/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
+      - api_url: slack api url
         channel: "alertmanager"
         send_resolved: true
         icon_url: https://avatars3.githubusercontent.com/u/3380462
